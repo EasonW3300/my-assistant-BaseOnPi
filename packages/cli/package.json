@@ -1,0 +1,19 @@
+{
+  "name": "@my-assistant/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "my-assistant": "./bin/my-assistant"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@my-assistant/core": "*"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}
