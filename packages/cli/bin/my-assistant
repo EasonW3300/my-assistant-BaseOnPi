@@ -1,3 +1,12 @@
 #!/usr/bin/env bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve real script path through symlinks (macOS + Linux compatible)
+REAL_PATH="$0"
+if [ -L "$REAL_PATH" ]; then
+  while [ -L "$REAL_PATH" ]; do
+    NEXT="$(readlink "$REAL_PATH")"
+    [[ "$NEXT" != /* ]] && NEXT="$(cd "$(dirname "$REAL_PATH")" && pwd)/$NEXT"
+    REAL_PATH="$NEXT"
+  done
+fi
+SCRIPT_DIR="$(cd "$(dirname "$REAL_PATH")" && pwd)"
 NODE_OPTIONS='--experimental-strip-types' exec node "${SCRIPT_DIR}/../dist/index.js" "$@"
