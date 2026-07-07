@@ -1,18 +1,5 @@
-export interface AssistantConfig {
-  assistant: {
-    name: string;
-    personality: string;
-    customized: boolean;
-  };
-  email: {
-    smtp: { host: string; port: number; user: string; pass: string };
-    imap: { host: string; port: number; user: string; pass: string };
-  };
-  model: {
-    default: string;
-    cheap: string;
-  };
-}
+export type { AssistantConfig } from "./config.js";
+export { ConfigManager, CONFIG_DIR, DATA_DIR, CONFIG_PATH, DEFAULT_CONFIG } from "./config.js";
 
 export interface CreateAssistantOptions {
   mode?: "tui" | "headless";
@@ -20,7 +7,7 @@ export interface CreateAssistantOptions {
 }
 
 export async function createAssistantAgent(
-  _config: AssistantConfig,
+  _configManager: any,
   _options?: CreateAssistantOptions
 ): Promise<any> {
   throw new Error("Not implemented yet — core modules pending");
