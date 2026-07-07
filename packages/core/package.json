@@ -1,0 +1,38 @@
+{
+  "name": "@my-assistant/core",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./memory": {
+      "types": "./dist/memory/index.d.ts",
+      "import": "./dist/memory/index.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@earendil-works/pi-agent-core": "^0.80.3",
+    "@earendil-works/pi-ai": "^0.80.3",
+    "@earendil-works/pi-coding-agent": "^0.80.3",
+    "typebox": "1.1.38",
+    "nodemailer": "6.10.0",
+    "cross-spawn": "7.0.6"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "6.4.17",
+    "@types/cross-spawn": "6.0.6",
+    "typescript": "5.9.3"
+  }
+}
