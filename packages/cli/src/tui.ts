@@ -1,6 +1,13 @@
 import { ConfigManager } from "@my-assistant/core";
 import { createAssistantAgent } from "@my-assistant/core";
 import * as readline from "node:readline";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+// Project root is 3 levels up from cli/src/tui.ts: cli/src -> cli -> packages -> project root
+const PROJECT_ROOT = resolve(__dirname, "..", "..", "..");
 
 const BOOTSTRAP_MESSAGE = `你好！这是我们第一次见面。在开始之前，我想先认识你：
 ① 你希望怎么称呼我？（给我起个名字）
@@ -23,20 +30,31 @@ export async function startChatSession() {
   const { session, dispose } = await createAssistantAgent(configManager, {
     mode: "tui",
     cwd: process.cwd(),
+    projectRoot: PROJECT_ROOT,
   });
+
+  let hasTextOutput = false;
 
   session.subscribe((event) => {
     if (
       event.type === "message_update" &&
       event.assistantMessageEvent.type === "text_delta"
     ) {
+      hasTextOutput = true;
       process.stdout.write(event.assistantMessageEvent.delta);
     }
     if (event.type === "tool_execution_start") {
       console.log(`\n  🔧 ${event.toolName}...`);
     }
+    if (event.type === "tool_execution_end") {
+      console.log(`  ✅ ${event.toolName} 完成`);
+    }
     if (event.type === "agent_end") {
+      if (!hasTextOutput) {
+        console.log("\n(无文本输出 — 助手可能未能找到相关信息)");
+      }
       console.log("\n" + "─".repeat(40));
+      hasTextOutput = false;
     }
   });
 

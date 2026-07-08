@@ -63,7 +63,7 @@ export function createCronTools(dataDir: string): AgentTool[] {
         content: [
           {
             type: "text",
-            text: `定时任务已创建: #${id} — "${params.description}"，cron: "${params.cron}"`,
+            text: `定时任务已创建: #${id} — "${params.description}"，cron: "${params.cron}"\n\n⚠️ 提醒：定时任务需要守护进程才能执行。请确保守护进程已启动：\n运行 "my-assistant daemon start" 启动守护进程。\n使用 "my-assistant daemon status" 检查守护进程状态。`,
           },
         ],
         details: task,

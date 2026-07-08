@@ -29,6 +29,7 @@ export { SkillGenerator } from "./skills/index.js";
 export interface CreateAssistantOptions {
   mode?: "tui" | "headless";
   cwd?: string;
+  projectRoot?: string;
 }
 
 const DEFAULT_TOOLS = ["read", "bash", "edit", "write", "grep", "find", "ls"];
@@ -129,7 +130,7 @@ Generated: ${new Date().toISOString()}`;
   );
 
   // ---- System Prompt ----
-  const systemPrompt = buildSystemPrompt(config);
+  const systemPrompt = buildSystemPrompt(config, options?.projectRoot);
 
   // ---- Resource Loader ----
   const resourceLoader = new DefaultResourceLoader({

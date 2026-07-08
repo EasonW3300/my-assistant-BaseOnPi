@@ -206,9 +206,112 @@ export async function routeCommand(
     return {
       name: "daemon",
       run: async () => {
-        console.log(
-          `daemon ${sub ?? "status"}: 守护进程管理由 @my-assistant/daemon 包提供。`
+        const { spawn } = await import("cross-spawn");
+        const { existsSync, readFileSync, unlinkSync } = await import("node:fs");
+        const { resolve, dirname } = await import("node:path");
+        const { fileURLToPath } = await import("node:url");
+        const { homedir } = await import("node:os");
+
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = dirname(__filename);
+
+        const DATA_DIR = resolve(homedir(), ".my-assistant", "data");
+        const PID_PATH = resolve(DATA_DIR, "daemon.pid");
+        // 2 levels up from packages/cli/dist/ reaches packages/, then into daemon/
+        const DAEMON_SCRIPT = resolve(
+          __dirname,
+          "..",
+          "..",
+          "daemon",
+          "dist",
+          "index.js"
         );
+
+        // Single function: get PID if daemon is running, null otherwise (avoids TOCTOU race)
+        function getRunningPid(): number | null {
+          if (!existsSync(PID_PATH)) return null;
+          try {
+            const pid = parseInt(readFileSync(PID_PATH, "utf-8").trim(), 10);
+            if (isNaN(pid)) return null;
+            process.kill(pid, 0);
+            return pid;
+          } catch {
+            return null;
+          }
+        }
+
+        if (sub === "start") {
+          const runningPid = getRunningPid();
+          if (runningPid !== null) {
+            console.log(`守护进程已在运行中 (pid: ${runningPid})。`);
+            return;
+          }
+
+          if (!existsSync(DAEMON_SCRIPT)) {
+            console.error(
+              `守护进程脚本未找到: ${DAEMON_SCRIPT}\n` +
+              `请先编译 daemon 包: cd packages/daemon && npx tsc`
+            );
+            return;
+          }
+
+          console.log("正在启动守护进程...");
+
+          const child = spawn(
+            process.execPath,
+            [DAEMON_SCRIPT, "start"],
+            {
+              detached: true,
+              stdio: "ignore",
+            }
+          );
+
+          child.unref();
+
+          // Wait briefly for PID file to be written
+          await new Promise((r) => setTimeout(r, 1000));
+
+          const startedPid = getRunningPid();
+          if (startedPid !== null) {
+            console.log(`守护进程已启动 (pid: ${startedPid})。`);
+            console.log(`使用 "my-assistant daemon status" 查看状态。`);
+            console.log(`使用 "my-assistant daemon stop" 停止守护进程。`);
+          } else {
+            console.log("守护进程启动失败。请检查日志。");
+          }
+        } else if (sub === "stop") {
+          const pid = getRunningPid();
+          if (pid === null) {
+            console.log("守护进程未在运行。");
+            return;
+          }
+          try {
+            process.kill(pid, "SIGTERM");
+            // Wait for PID file cleanup
+            await new Promise((r) => setTimeout(r, 1000));
+            if (getRunningPid() === null) {
+              console.log(`守护进程已停止 (pid: ${pid})。`);
+            } else {
+              // Force kill
+              process.kill(pid, "SIGKILL");
+              await new Promise((r) => setTimeout(r, 500));
+              try { unlinkSync(PID_PATH); } catch {}
+              console.log(`守护进程已强制停止 (pid: ${pid})。`);
+            }
+          } catch (err) {
+            console.error(`停止守护进程失败: ${err instanceof Error ? err.message : String(err)}`);
+          }
+        } else if (sub === "status" || !sub) {
+          const pid = getRunningPid();
+          if (pid !== null) {
+            console.log(`守护进程运行中 (pid: ${pid})。`);
+          } else {
+            console.log("守护进程未运行。");
+            console.log(`使用 "my-assistant daemon start" 启动守护进程。`);
+          }
+        } else {
+          console.log("用法: my-assistant daemon <start|stop|status>");
+        }
       },
     };
   }
