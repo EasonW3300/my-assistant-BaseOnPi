@@ -18,6 +18,7 @@ import { SkillGenerator } from "./skills/index.js";
 import { createAllHooks } from "./hooks/index.js";
 import type { MemoryExtractor } from "./hooks/memory-hooks.js";
 import type { TopicExtractor } from "./hooks/skill-hooks.js";
+import { createLLMMemoryExtractor } from "./extractors/memory-extractor.js";
 
 export type { AssistantConfig } from "./config.js";
 export { ConfigManager, CONFIG_DIR, DATA_DIR, CONFIG_PATH, DEFAULT_CONFIG } from "./config.js";
@@ -73,6 +74,26 @@ export async function createAssistantAgent(
     );
   }
 
+  // ---- Resolve cheap model for extractors ----
+  let cheapModel: Model<any> | undefined;
+  try {
+    const cheapModelId = config.model.cheap as any;
+    cheapModel =
+      getModel("deepseek", cheapModelId) ??
+      getModel("deepseek", "deepseek-v4-flash" as any);
+    if (!cheapModel) {
+      console.warn(
+        `[my-assistant] Cheap model "${config.model.cheap}" not found, memory extraction disabled`
+      );
+    }
+  } catch (err) {
+    console.warn(
+      `[my-assistant] Failed to resolve cheap model: ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
+  }
+
   // ---- Custom Tools ----
   const customTools = createAllTools(configManager, DATA_DIR);
 
@@ -102,12 +123,14 @@ Generated: ${new Date().toISOString()}`;
     }
   );
 
-  // ---- Extractors (placeholder: LLM-driven in production) ----
-  const memoryExtractor: MemoryExtractor = {
-    async extract(_text: string) {
-      return [];
-    },
-  };
+  // ---- Extractors ----
+  const memoryExtractor: MemoryExtractor = cheapModel
+    ? createLLMMemoryExtractor(cheapModel)
+    : {
+        async extract(_text: string) {
+          return [];
+        },
+      };
 
   const topicExtractor: TopicExtractor = {
     async extract(_text: string) {
