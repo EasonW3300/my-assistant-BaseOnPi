@@ -1,5 +1,5 @@
 export function printHelp(): void {
-  console.log(`my-assistant — 基于 pi-agent 的个人 AI 管家
+  console.log(`my-assistant — 专属于你的个人管家
 
 USAGE:
   my-assistant <command> [args]
