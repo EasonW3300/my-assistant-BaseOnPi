@@ -101,7 +101,7 @@ export default function myAssistantExtension(pi: ExtensionAPI) {
             type: "text",
             text: `[my-assistant] 脚本执行通过 bash 工具委托。`,
           },
-        ],
+        ], 
         details: { scriptLength: params.script.length },
       };
     },
