@@ -1,6 +1,7 @@
 import type { MemoryEngine } from "../memory/index.js";
 import type { TopicTracker } from "../skills/topic-tracker.js";
 import type { SkillGenerator } from "../skills/index.js";
+import type { SkillsEngine } from "../skills/engine.js";
 import type { MemoryExtractor } from "./memory-hooks.js";
 import { createMemoryHook } from "./memory-hooks.js";
 import type { TopicExtractor } from "./skill-hooks.js";
@@ -10,6 +11,7 @@ export function createAllHooks(
   engine: MemoryEngine,
   tracker: TopicTracker,
   generator: SkillGenerator,
+  skillsEngine: SkillsEngine,
   memoryExtractor: MemoryExtractor,
   topicExtractor: TopicExtractor,
   onSkillGenerated: (
@@ -23,7 +25,8 @@ export function createAllHooks(
     tracker,
     generator,
     topicExtractor,
-    onSkillGenerated
+    onSkillGenerated,
+    skillsEngine
   );
 
   return {

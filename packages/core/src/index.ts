@@ -15,10 +15,13 @@ import { createAllTools } from "./tools/index.js";
 import { MemoryEngine } from "./memory/index.js";
 import { TopicTracker } from "./skills/topic-tracker.js";
 import { SkillGenerator } from "./skills/index.js";
+import { SkillsEngine } from "./skills/engine.js";
 import { createAllHooks } from "./hooks/index.js";
 import type { MemoryExtractor } from "./hooks/memory-hooks.js";
 import type { TopicExtractor } from "./hooks/skill-hooks.js";
 import { createLLMMemoryExtractor } from "./extractors/memory-extractor.js";
+import { createLLMTopicExtractor } from "./extractors/topic-extractor.js";
+import { createSkillTools } from "./tools/skill-tools.js";
 
 export type { AssistantConfig } from "./config.js";
 export { ConfigManager, CONFIG_DIR, DATA_DIR, CONFIG_PATH, DEFAULT_CONFIG } from "./config.js";
@@ -26,6 +29,7 @@ export { buildSystemPrompt } from "./soul.js";
 export { MemoryEngine } from "./memory/index.js";
 export { TopicTracker } from "./skills/topic-tracker.js";
 export { SkillGenerator } from "./skills/index.js";
+export { SkillsEngine } from "./skills/engine.js";
 
 export interface CreateAssistantOptions {
   mode?: "tui" | "headless";
@@ -94,12 +98,16 @@ export async function createAssistantAgent(
     );
   }
 
-  // ---- Custom Tools ----
-  const customTools = createAllTools(configManager, DATA_DIR);
-
   // ---- Engines ----
   const memoryEngine = new MemoryEngine();
   const topicTracker = new TopicTracker();
+  const skillsEngine = new SkillsEngine(skillsDir);
+
+  // ---- Custom Tools ----
+  const customTools = [
+    ...createAllTools(configManager, DATA_DIR),
+    createSkillTools(skillsEngine),
+  ];
 
   // ---- Skill Generator ----
   const skillGenerator = new SkillGenerator(
@@ -132,17 +140,20 @@ Generated: ${new Date().toISOString()}`;
         },
       };
 
-  const topicExtractor: TopicExtractor = {
-    async extract(_text: string) {
-      return { topic: "", category: "" };
-    },
-  };
+  const topicExtractor: TopicExtractor = cheapModel
+    ? createLLMTopicExtractor(cheapModel)
+    : {
+        async extract(_text: string) {
+          return { topic: "", category: "" };
+        },
+      };
 
   // ---- Hooks ----
   const hooks = createAllHooks(
     memoryEngine,
     topicTracker,
     skillGenerator,
+    skillsEngine,
     memoryExtractor,
     topicExtractor,
     (topic, skillName, _content) => {
@@ -206,6 +217,7 @@ Generated: ${new Date().toISOString()}`;
     session,
     configManager,
     memoryEngine,
+    skillsEngine,
     topicTracker,
     skillGenerator,
     dispose: () => session.dispose(),
